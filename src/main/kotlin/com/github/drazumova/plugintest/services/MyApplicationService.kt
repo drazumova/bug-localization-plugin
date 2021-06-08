@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.template.services
+package com.github.drazumova.plugintest.services
 
-import org.jetbrains.plugins.template.MyBundle
+import com.github.drazumova.plugintest.MyBundle
 
 class MyApplicationService {
 
