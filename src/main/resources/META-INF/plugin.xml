@@ -1,15 +1,23 @@
 <idea-plugin>
     <id>com.github.drazumova.plugintest</id>
-    <name>plugin-test</name>
+    <name>test</name>
     <vendor>drazumova</vendor>
 
     <!-- Product and plugin compatibility requirements -->
     <!-- https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.java</depends>
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.modules.java-capable</depends>
+
 
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="com.github.drazumova.plugintest.services.MyApplicationService"/>
         <projectService serviceImplementation="com.github.drazumova.plugintest.services.MyProjectService"/>
+<!--        <custom.exception.handler implementation="com.github.drazumova.plugintest.points.ExceptionHandler"/>-->
+        <exceptionFilter implementation="com.github.drazumova.plugintest.points.ExceptionFilter"/>
+<!--        <errorHandler implementation="com.github.drazumova.plugintest.points.ErrorHandler"/>-->
     </extensions>
 
     <applicationListeners>
