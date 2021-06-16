@@ -4,15 +4,16 @@ import com.intellij.execution.filters.*
 import com.intellij.execution.filters.ExceptionWorker.parseExceptionLine
 import com.intellij.execution.filters.Filter
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Consumer
+import java.awt.Color
 
 
 class ExceptionFilter : ExceptionFilterFactory {
     companion object {
-        var counter : Int = 0
+        var counter: Int = 0
     }
 
     override fun create(searchScope: GlobalSearchScope): Filter {
@@ -24,7 +25,7 @@ class ExceptionFilter : ExceptionFilterFactory {
 class Filter(private val name: String, private val scope: GlobalSearchScope) : Filter, FilterMixin {
     private val exceptionInfoCache = ExceptionInfoCache(scope)
     private val exceptionWorker = ExceptionWorker(exceptionInfoCache)
-    private var collectedInfo : Info? = null
+    private var collectedInfo: Info? = null
 
     override fun shouldRunHeavy(): Boolean {
         return true
@@ -45,8 +46,7 @@ class Filter(private val name: String, private val scope: GlobalSearchScope) : F
 
     override fun applyFilter(line: String, entireLength: Int): Filter.Result? {
         if (line.isEmpty()) {
-            processResult()
-            return null
+            return processResult()
         }
 
         val message = ExceptionInfo.parseMessage(line, entireLength)
@@ -61,26 +61,44 @@ class Filter(private val name: String, private val scope: GlobalSearchScope) : F
         val info = filter.firstHyperlinkInfo as? FileHyperlinkInfo ?: return null
         val descriptor = info.descriptor?.offset ?: return null
         val psiElement = exceptionWorker.file.findElementAt(descriptor) ?: return null
-
         val virtualFile = psiElement.containingFile.virtualFile
 
-        val resultingLine = Line(virtualFile, psiElement.containingFile, exceptionLine.lineNumber, method, classname)
+        val resultingLine = Line(
+            virtualFile, exceptionLine.lineNumber,
+            method, classname, line, entireLength - line.length
+        )
         if (collectedInfo != null) {
             collectedInfo?.lines?.add(resultingLine)
         } else {
             println("Lost line $line")
         }
+
         return null
     }
 
-    private fun processResult() {
-        collectedInfo ?: return
-        println("process result")
-        println("${collectedInfo?.exceptionInfo?.exceptionClassName} with ${collectedInfo?.lines?.size} lines")
+    private fun processResult(): Filter.Result? {
+        collectedInfo ?: return null
+        val targetLine = collectedInfo!!.lines[0]
+
+//        val virtualFile = targetLine.file
+//        val linkInfo = HyperlinkInfoFactory.getInstance().createMultipleFilesHyperlinkInfo(
+//            listOf(virtualFile), targetLine.lineNumber - 1, scope.project!!, null)
+
+        val ta = TextAttributes()
+        ta.backgroundColor = Color.RED
+        ta.foregroundColor = Color.BLUE
+        return Filter.Result(
+            targetLine.startOffset,
+            targetLine.startOffset + targetLine.lineText.length,
+            null,
+            ta
+        )
     }
 }
 
-internal data class Line(val file : VirtualFile, val psiFile : PsiElement, val lineNumber: Int,
-                val methodName: String, val className: String)
+internal data class Line(
+    val file: VirtualFile, val lineNumber: Int,
+    val methodName: String, val className: String, val lineText: String, val startOffset: Int
+)
 
 internal data class Info(val exceptionInfo: ExceptionInfo, val lines: MutableList<Line>)
