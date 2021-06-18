@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Consumer
+import git4idea.annotate.GitAnnotationProvider
 import java.awt.Color
 
 
@@ -22,10 +23,12 @@ class ExceptionFilter : ExceptionFilterFactory {
     }
 }
 
-class Filter(private val name: String, private val scope: GlobalSearchScope) : Filter, FilterMixin {
+class Filter(private val name: String, scope: GlobalSearchScope) : Filter, FilterMixin {
     private val exceptionInfoCache = ExceptionInfoCache(scope)
     private val exceptionWorker = ExceptionWorker(exceptionInfoCache)
     private var collectedInfo: Info? = null
+    private val project = scope.project!!
+    private val gitService = project.getService(GitAnnotationProvider::class.java)
 
     override fun shouldRunHeavy(): Boolean {
         return true
@@ -64,7 +67,7 @@ class Filter(private val name: String, private val scope: GlobalSearchScope) : F
         val virtualFile = psiElement.containingFile.virtualFile
 
         val resultingLine = Line(
-            virtualFile, exceptionLine.lineNumber,
+            virtualFile, exceptionLine.lineNumber - 1,
             method, classname, line, entireLength - line.length
         )
         if (collectedInfo != null) {
@@ -78,7 +81,13 @@ class Filter(private val name: String, private val scope: GlobalSearchScope) : F
 
     private fun processResult(): Filter.Result? {
         collectedInfo ?: return null
-        val targetLine = collectedInfo!!.lines[0]
+
+        val lastModificationTime = collectedInfo!!.lines.map {
+            val annotation = gitService.annotate(it.file)
+            annotation.getLineDate(it.lineNumber)?.time ?: -1
+        }
+        val index = lastModificationTime.indexOf(lastModificationTime.maxOrNull() ?: lastModificationTime.first())
+        val targetLine = collectedInfo!!.lines[index]
 
 //        val virtualFile = targetLine.file
 //        val linkInfo = HyperlinkInfoFactory.getInstance().createMultipleFilesHyperlinkInfo(

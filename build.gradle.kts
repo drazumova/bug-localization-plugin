@@ -28,6 +28,7 @@ repositories {
 }
 dependencies {
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.17.1")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.5.10")
 }
 
 // Configure gradle-intellij-plugin plugin.

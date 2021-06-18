@@ -10,14 +10,13 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
     <depends>com.intellij.modules.java-capable</depends>
-
+    <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="com.github.drazumova.plugintest.services.MyApplicationService"/>
         <projectService serviceImplementation="com.github.drazumova.plugintest.services.MyProjectService"/>
-<!--        <custom.exception.handler implementation="com.github.drazumova.plugintest.points.ExceptionHandler"/>-->
         <exceptionFilter implementation="com.github.drazumova.plugintest.points.ExceptionFilter"/>
-<!--        <errorHandler implementation="com.github.drazumova.plugintest.points.ErrorHandler"/>-->
     </extensions>
 
     <applicationListeners>
