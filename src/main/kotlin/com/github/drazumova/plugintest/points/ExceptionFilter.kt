@@ -8,7 +8,7 @@ import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Consumer
-import git4idea.annotate.GitAnnotationProvider
+import com.intellij.vcsUtil.VcsUtil
 import java.awt.Color
 
 
@@ -28,7 +28,6 @@ class Filter(private val name: String, scope: GlobalSearchScope) : Filter, Filte
     private val exceptionWorker = ExceptionWorker(exceptionInfoCache)
     private var collectedInfo: Info? = null
     private val project = scope.project!!
-    private val gitService = project.getService(GitAnnotationProvider::class.java)
 
     override fun shouldRunHeavy(): Boolean {
         return true
@@ -83,7 +82,8 @@ class Filter(private val name: String, scope: GlobalSearchScope) : Filter, Filte
         collectedInfo ?: return null
 
         val lastModificationTime = collectedInfo!!.lines.map {
-            val annotation = gitService.annotate(it.file)
+            val annotationProvider = VcsUtil.getVcsFor(project, it.file)?.annotationProvider ?: return@map -1
+            val annotation = annotationProvider.annotate(it.file)
             annotation.getLineDate(it.lineNumber)?.time ?: -1
         }
         val index = lastModificationTime.indexOf(lastModificationTime.maxOrNull() ?: lastModificationTime.first())
