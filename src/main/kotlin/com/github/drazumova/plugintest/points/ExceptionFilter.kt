@@ -4,49 +4,26 @@ import com.github.drazumova.plugintest.utils.VCSAnnotationProvider
 import com.intellij.execution.filters.*
 import com.intellij.execution.filters.ExceptionWorker.parseExceptionLine
 import com.intellij.execution.filters.Filter
-import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.search.GlobalSearchScope
-import com.intellij.util.Consumer
 import java.awt.Color
 
 
 class ExceptionFilter : ExceptionFilterFactory {
-    companion object {
-        var counter: Int = 0
-    }
-
     override fun create(searchScope: GlobalSearchScope): Filter {
-        counter += 1
-        return Filter("filter $counter", searchScope)
+        return Filter(searchScope)
     }
 }
 
-class Filter(private val name: String, scope: GlobalSearchScope) : Filter, FilterMixin {
+class Filter(scope: GlobalSearchScope) : Filter {
     private val exceptionInfoCache = ExceptionInfoCache(scope)
     private val exceptionWorker = ExceptionWorker(exceptionInfoCache)
     private var collectedInfo: Info? = null
     private val project = scope.project!!
     private val vcsProvider = VCSAnnotationProvider.INSTANCE
 
-    override fun shouldRunHeavy(): Boolean {
-        return true
-    }
-
-    override fun applyHeavyFilter(
-        copiedFragment: Document,
-        startOffset: Int,
-        startLineNumber: Int,
-        consumer: Consumer<in FilterMixin.AdditionalHighlight>
-    ) {
-        println(copiedFragment.text)
-    }
-
-    override fun getUpdateMessage(): String {
-        return ""
-    }
-
+    @Suppress("UnstableApiUsage")
     override fun applyFilter(line: String, entireLength: Int): Filter.Result? {
         if (line.isEmpty()) {
             return processResult()
@@ -56,13 +33,13 @@ class Filter(private val name: String, scope: GlobalSearchScope) : Filter, Filte
         message?.let {
             collectedInfo = Info(it, mutableListOf())
         }
-        val filter = exceptionWorker.execute(line, entireLength) ?: return null
         val exceptionLine = parseExceptionLine(line) ?: return null
         val method = exceptionLine.methodNameRange.substring(line)
         val classname = exceptionLine.classFqnRange.substring(line)
 
-        val info = filter.firstHyperlinkInfo as? FileHyperlinkInfo ?: return null
-        val descriptor = info.descriptor?.offset ?: return null
+        val filter = exceptionWorker.execute(line, entireLength)
+        val info = filter?.firstHyperlinkInfo as? FileHyperlinkInfo
+        val descriptor = info?.descriptor?.offset ?: return null
         val psiElement = exceptionWorker.file.findElementAt(descriptor) ?: return null
         val virtualFile = psiElement.containingFile.virtualFile
 
@@ -72,8 +49,6 @@ class Filter(private val name: String, scope: GlobalSearchScope) : Filter, Filte
         )
         if (collectedInfo != null) {
             collectedInfo?.lines?.add(resultingLine)
-        } else {
-            println("Lost line $line")
         }
 
         return null
@@ -85,21 +60,17 @@ class Filter(private val name: String, scope: GlobalSearchScope) : Filter, Filte
         val lastModificationTime = collectedInfo!!.lines.map {
             vcsProvider.lastModifiedTime(it.file, it.lineNumber, project)
         }
-        val index = lastModificationTime.indexOf(lastModificationTime.maxOrNull() ?: lastModificationTime.first())
+        val index = lastModificationTime.indexOf(lastModificationTime.maxOrNull())
         val targetLine = collectedInfo!!.lines[index]
 
-//        val virtualFile = targetLine.file
-//        val linkInfo = HyperlinkInfoFactory.getInstance().createMultipleFilesHyperlinkInfo(
-//            listOf(virtualFile), targetLine.lineNumber - 1, scope.project!!, null)
-
-        val ta = TextAttributes()
-        ta.backgroundColor = Color.RED
-        ta.foregroundColor = Color.BLUE
+        val highlightAttributes = TextAttributes()
+        highlightAttributes.backgroundColor = Color.RED
+        highlightAttributes.foregroundColor = Color.BLUE
         return Filter.Result(
             targetLine.startOffset,
             targetLine.startOffset + targetLine.lineText.length,
             null,
-            ta
+            highlightAttributes
         )
     }
 }
@@ -109,4 +80,5 @@ internal data class Line(
     val methodName: String, val className: String, val lineText: String, val startOffset: Int
 )
 
+@Suppress("UnstableApiUsage")
 internal data class Info(val exceptionInfo: ExceptionInfo, val lines: MutableList<Line>)
