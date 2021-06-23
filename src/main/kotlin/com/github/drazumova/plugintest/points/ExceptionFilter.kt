@@ -1,5 +1,6 @@
 package com.github.drazumova.plugintest.points
 
+import com.github.drazumova.plugintest.utils.VCSAnnotationProvider
 import com.intellij.execution.filters.*
 import com.intellij.execution.filters.ExceptionWorker.parseExceptionLine
 import com.intellij.execution.filters.Filter
@@ -8,7 +9,6 @@ import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.util.Consumer
-import com.intellij.vcsUtil.VcsUtil
 import java.awt.Color
 
 
@@ -28,6 +28,7 @@ class Filter(private val name: String, scope: GlobalSearchScope) : Filter, Filte
     private val exceptionWorker = ExceptionWorker(exceptionInfoCache)
     private var collectedInfo: Info? = null
     private val project = scope.project!!
+    private val vcsProvider = VCSAnnotationProvider.INSTANCE
 
     override fun shouldRunHeavy(): Boolean {
         return true
@@ -82,9 +83,7 @@ class Filter(private val name: String, scope: GlobalSearchScope) : Filter, Filte
         collectedInfo ?: return null
 
         val lastModificationTime = collectedInfo!!.lines.map {
-            val annotationProvider = VcsUtil.getVcsFor(project, it.file)?.annotationProvider ?: return@map -1
-            val annotation = annotationProvider.annotate(it.file)
-            annotation.getLineDate(it.lineNumber)?.time ?: -1
+            vcsProvider.lastModifiedTime(it.file, it.lineNumber, project)
         }
         val index = lastModificationTime.indexOf(lastModificationTime.maxOrNull() ?: lastModificationTime.first())
         val targetLine = collectedInfo!!.lines[index]

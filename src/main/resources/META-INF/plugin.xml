@@ -3,8 +3,6 @@
     <name>test</name>
     <vendor>drazumova</vendor>
 
-    <!-- Product and plugin compatibility requirements -->
-    <!-- https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.java</depends>
     <depends>com.intellij.modules.platform</depends>
@@ -12,6 +10,12 @@
     <depends>com.intellij.modules.java-capable</depends>
     <depends>com.intellij.modules.platform</depends>
     <depends>Git4Idea</depends>
+
+    <extensionPoints>
+        <extensionPoint
+                name="vcsInformationProvider"
+                interface="com.github.drazumova.plugintest.utils.VCSAnnotationProvider"/>
+    </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
         <applicationService serviceImplementation="com.github.drazumova.plugintest.services.MyApplicationService"/>
