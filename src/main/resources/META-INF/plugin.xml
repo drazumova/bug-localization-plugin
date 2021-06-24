@@ -18,13 +18,6 @@
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="com.github.drazumova.plugintest.services.MyApplicationService"/>
-        <projectService serviceImplementation="com.github.drazumova.plugintest.services.MyProjectService"/>
         <exceptionFilter implementation="com.github.drazumova.plugintest.points.ExceptionFilter"/>
     </extensions>
-
-    <applicationListeners>
-        <listener class="com.github.drazumova.plugintest.listeners.MyProjectManagerListener"
-                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
-    </applicationListeners>
 </idea-plugin>
