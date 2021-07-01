@@ -11,7 +11,6 @@ import com.intellij.psi.search.GlobalSearchScope
 import kotlinx.coroutines.runBlocking
 import java.awt.Color
 
-
 class ExceptionFilter : ExceptionFilterFactory {
     override fun create(searchScope: GlobalSearchScope): Filter {
         return Filter(searchScope)
@@ -76,8 +75,13 @@ class Filter(scope: GlobalSearchScope) : Filter {
 }
 
 data class ExceptionLine(
-    val file: VirtualFile, val psiFile: PsiFile, val lineNumber: Int,
-    val methodName: String, val className: String, val lineText: String, val startOffset: Int
+    val file: VirtualFile,
+    val psiFile: PsiFile,
+    val lineNumber: Int,
+    val methodName: String,
+    val className: String,
+    val lineText: String,
+    val startOffset: Int
 )
 
 @Suppress("UnstableApiUsage")

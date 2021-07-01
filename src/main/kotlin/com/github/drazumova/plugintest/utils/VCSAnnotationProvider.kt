@@ -13,7 +13,6 @@ interface VCSAnnotationProvider {
             )
 
         val INSTANCE = CompositeAnnotationProvider(EP_NAME.extensions.plus(VCSAnnotationProviderImpl()).toList())
-
     }
 
     /**
@@ -24,7 +23,6 @@ interface VCSAnnotationProvider {
     fun annotate(file: VirtualFile, project: Project): FileAnnotation?
 }
 
-
 class CompositeAnnotationProvider(private val providers: List<VCSAnnotationProvider>) : VCSAnnotationProvider {
     override fun lastModifiedTime(file: VirtualFile, line: Int, project: Project): Long {
         return providers.map { it.lastModifiedTime(file, line, project) }.maxOrNull() ?: -1
@@ -34,4 +32,3 @@ class CompositeAnnotationProvider(private val providers: List<VCSAnnotationProvi
         return providers.mapNotNull { it.annotate(file, project) }.firstOrNull()
     }
 }
-

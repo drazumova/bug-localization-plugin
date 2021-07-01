@@ -21,13 +21,12 @@ class PredictionModelConnection {
 
         return client.getProbabilities(info)
     }
-
 }
 
 @Suppress("UnstableApiUsage")
 private fun Info.toExceptionReport(): Messages.Exception {
     val exceptionLinesInfo = exceptionLines.map { it.toExceptionLineInfo() }
-    val exceptionBuilder =  Messages.Exception.newBuilder().setClassName(exceptionInfo.exceptionClassName)
+    val exceptionBuilder = Messages.Exception.newBuilder().setClassName(exceptionInfo.exceptionClassName)
         .setMessage(exceptionInfo.exceptionMessage)
     exceptionLinesInfo.forEach { exceptionLine ->
         exceptionBuilder.addStacktrace(exceptionLine)
@@ -42,7 +41,7 @@ private fun ExceptionLine.toExceptionLineInfo(): Messages.Line {
         .setMethodName(methodName).setLastModificationTime(time).setText(lineText).build()
 }
 
-class ModelClient(private val channel : ManagedChannel) : Closeable {
+class ModelClient(private val channel: ManagedChannel) : Closeable {
     private val stub: ModelGrpcKt.ModelCoroutineStub = ModelGrpcKt.ModelCoroutineStub(channel)
 
     suspend fun getProbabilities(info: Info): List<Double> {

@@ -1,7 +1,7 @@
+import com.google.protobuf.gradle.*
 import io.gitlab.arturbosch.detekt.Detekt
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import com.google.protobuf.gradle.*
 
 fun properties(key: String) = project.findProperty(key).toString()
 
@@ -13,7 +13,7 @@ plugins {
     id("io.gitlab.arturbosch.detekt") version "1.17.1"
     id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
     kotlin("plugin.serialization") version "1.5.10"
-    id ("com.google.protobuf") version "0.8.16"
+    id("com.google.protobuf") version "0.8.16"
 }
 
 group = properties("pluginGroup")
@@ -37,7 +37,6 @@ dependencies {
     implementation("io.grpc:grpc-protobuf:1.39.0")
     implementation("io.grpc:grpc-stub:1.39.0")
 //    compileOnly("org.apache.tomcat:annotations-api:6.0.53")
-
 }
 
 protobuf {
@@ -62,7 +61,7 @@ protobuf {
     }
 }
 
-sourceSets{
+sourceSets {
     create("proto") {
         proto {
             srcDir("src/main/proto")
