@@ -8,6 +8,7 @@ import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.psi.search.GlobalSearchScope
+import kotlinx.coroutines.runBlocking
 import java.awt.Color
 
 
@@ -55,7 +56,9 @@ class Filter(scope: GlobalSearchScope) : Filter {
 
     private fun processResult(): Filter.Result? {
         if (collectedInfo == null) return null
-        val probabilitiesList = PredictionModelConnection().getProbabilities(collectedInfo!!)
+        val probabilitiesList = runBlocking {
+            PredictionModelConnection().getProbabilities(collectedInfo!!)
+        }
         val index = probabilitiesList.indexOf(probabilitiesList.maxOrNull())
 
         val targetLine = collectedInfo?.exceptionLines?.get(index) ?: return null
