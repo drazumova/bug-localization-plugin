@@ -1,6 +1,6 @@
 import cherrypy
-import json
 import numpy as np
+
 
 @cherrypy.expose
 class Main(object):
@@ -26,5 +26,5 @@ if __name__ == '__main__':
         }
     }
     cherrypy.config.update({'server.socket_host': '0.0.0.0',
-                        'server.socket_port': 8080})
+                            'server.socket_port': 8080})
     cherrypy.quickstart(Main(), '/', conf)
