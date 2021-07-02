@@ -1,4 +1,4 @@
-package com.github.drazumova.plugintest.utils
+package com.github.drazumova.plugintest.vcs
 
 import com.intellij.diff.comparison.iterables.DiffIterableUtil
 import com.intellij.openapi.project.Project

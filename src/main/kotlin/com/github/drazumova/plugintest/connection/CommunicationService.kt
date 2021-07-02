@@ -1,7 +1,8 @@
-package com.github.drazumova.plugintest.utils
+package com.github.drazumova.plugintest.connection
 
-import com.github.drazumova.plugintest.points.ExceptionLine
-import com.github.drazumova.plugintest.points.Info
+import com.github.drazumova.plugintest.exceptions.ExceptionLine
+import com.github.drazumova.plugintest.exceptions.Info
+import com.github.drazumova.plugintest.vcs.VCSAnnotationProvider
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import messages.Messages

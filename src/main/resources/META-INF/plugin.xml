@@ -12,10 +12,10 @@
     <extensionPoints>
         <extensionPoint
                 name="vcsInformationProvider"
-                interface="com.github.drazumova.plugintest.utils.VCSAnnotationProvider"/>
+                interface="com.github.drazumova.plugintest.vcs.VCSAnnotationProvider"/>
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
-        <exceptionFilter implementation="com.github.drazumova.plugintest.points.ExceptionFilter"/>
+        <exceptionFilter implementation="com.github.drazumova.plugintest.exceptions.ExceptionFilter"/>
     </extensions>
 </idea-plugin>

@@ -1,6 +1,6 @@
-package com.github.drazumova.plugintest.points
+package com.github.drazumova.plugintest.exceptions
 
-import com.github.drazumova.plugintest.utils.PredictionModelConnection
+import com.github.drazumova.plugintest.connection.PredictionModelConnection
 import com.intellij.execution.filters.*
 import com.intellij.execution.filters.ExceptionWorker.parseExceptionLine
 import com.intellij.execution.filters.Filter
