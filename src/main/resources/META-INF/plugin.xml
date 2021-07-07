@@ -7,6 +7,8 @@
     <depends>com.intellij.java</depends>
     <depends>com.intellij.modules.java</depends>
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java-capable</depends>
+    <depends>org.jetbrains.kotlin</depends>
     <depends>Git4Idea</depends>
 
     <extensionPoints>
@@ -17,5 +19,13 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <exceptionFilter implementation="com.github.drazumova.plugintest.exceptions.ExceptionFilter"/>
+        <projectService serviceImplementation="com.github.drazumova.plugintest.exceptions.ProbabilitiesCacheService"/>
     </extensions>
+    <actions>
+        <action id="com.github.drazumova.plugintest.exceptions.UpdateHighlightingAction"
+                class="com.github.drazumova.plugintest.exceptions.UpdateHighlightingAction"
+                    text="Add Exception Highlighting">
+            <add-to-group group-id="ConsoleView.PopupMenu" anchor="first"/>
+        </action>
+    </actions>
 </idea-plugin>

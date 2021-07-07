@@ -1,6 +1,5 @@
 package com.github.drazumova.plugintest.exceptions
 
-import com.github.drazumova.plugintest.connection.PredictionModelConnection
 import com.intellij.execution.filters.*
 import com.intellij.execution.filters.ExceptionWorker.parseExceptionLine
 import com.intellij.execution.filters.Filter
@@ -8,7 +7,6 @@ import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.psi.search.GlobalSearchScope
-import kotlinx.coroutines.runBlocking
 import java.awt.Color
 
 class ExceptionFilter : ExceptionFilterFactory {
@@ -17,10 +15,10 @@ class ExceptionFilter : ExceptionFilterFactory {
     }
 }
 
-class Filter(scope: GlobalSearchScope) : Filter {
+class Filter(private val scope: GlobalSearchScope) : Filter {
     private val exceptionInfoCache = ExceptionInfoCache(scope)
     private val exceptionWorker = ExceptionWorker(exceptionInfoCache)
-    private var collectedInfo: Info? = null
+    private var infoBuilder = ExceptionInfoBuilder()
 
     @Suppress("UnstableApiUsage")
     override fun applyFilter(line: String, entireLength: Int): Filter.Result? {
@@ -29,9 +27,8 @@ class Filter(scope: GlobalSearchScope) : Filter {
         }
 
         val message = ExceptionInfo.parseMessage(line, entireLength)
-        message?.let {
-            collectedInfo = Info(it, mutableListOf())
-        }
+        infoBuilder.addMessage(message, line)
+
         val exceptionLine = parseExceptionLine(line) ?: return null
         val method = exceptionLine.methodNameRange.substring(line)
         val classname = exceptionLine.classFqnRange.substring(line)
@@ -46,21 +43,20 @@ class Filter(scope: GlobalSearchScope) : Filter {
             virtualFile, psiElement.containingFile, exceptionLine.lineNumber - 1,
             method, classname, line, entireLength - line.length
         )
-        if (collectedInfo != null) {
-            collectedInfo?.exceptionLines?.add(resultingLine)
-        }
+        infoBuilder.addLine(resultingLine)
 
         return null
     }
 
     private fun processResult(): Filter.Result? {
-        if (collectedInfo == null) return null
-        val probabilitiesList = runBlocking {
-            PredictionModelConnection().getProbabilities(collectedInfo!!)
-        }
+        val collectedInfo = infoBuilder.build() ?: return null
+
+        val service = exceptionInfoCache.project.getService(ProbabilitiesCacheService::class.java)
+//        service.clear(collectedInfo)
+        val probabilitiesList = service.checkResultForStacktrace(collectedInfo) ?: return null
         val index = probabilitiesList.indexOf(probabilitiesList.maxOrNull())
 
-        val targetLine = collectedInfo?.exceptionLines?.get(index) ?: return null
+        val targetLine = collectedInfo.exceptionLines[index]
 
         val highlightAttributes = TextAttributes()
         highlightAttributes.backgroundColor = Color.RED
@@ -85,4 +81,35 @@ data class ExceptionLine(
 )
 
 @Suppress("UnstableApiUsage")
-data class Info(val exceptionInfo: ExceptionInfo, val exceptionLines: MutableList<ExceptionLine>)
+data class Info(val exceptionInfo: ExceptionInfo, val exceptionLines: List<ExceptionLine>, val fullText: String)
+
+@Suppress("UnstableApiUsage")
+class ExceptionInfoBuilder {
+    private val textBuilder = StringBuilder()
+    private var exceptionInfo: ExceptionInfo? = null
+    private val lines = mutableListOf<ExceptionLine>()
+
+
+    fun build(): Info? {
+        return if (exceptionInfo != null && lines.isNotEmpty()) {
+            Info(exceptionInfo!!, lines, textBuilder.toString())
+        } else null
+    }
+
+    fun addMessage(parsedMessage: ExceptionInfo?, line: String) {
+        exceptionInfo = exceptionInfo ?: parsedMessage
+        parsedMessage?.let {
+            textBuilder.append(line)
+        }
+    }
+
+    fun addLine(line: ExceptionLine) {
+        lines.add(line)
+        textBuilder.append(line.lineText)
+    }
+
+    fun addLineText(lineText: String) {
+        textBuilder.append(lineText)
+    }
+
+}
