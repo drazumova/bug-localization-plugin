@@ -14,6 +14,7 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
     kotlin("plugin.serialization") version "1.5.10"
     id("com.google.protobuf") version "0.8.16"
+
 }
 
 group = properties("pluginGroup")
@@ -36,6 +37,10 @@ dependencies {
     implementation("io.grpc:grpc-netty:1.39.0")
     implementation("io.grpc:grpc-protobuf:1.39.0")
     implementation("io.grpc:grpc-stub:1.39.0")
+    implementation("com.github.doyaaaaaken:kotlin-csv-jvm:0.15.2")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:5.4.2.201908231537-r")
+    implementation("com.github.javaparser:javaparser-symbol-solver-core:3.22.1")
+    implementation("com.github.javaparser:javaparser-core:3.22.1")
 //    compileOnly("org.apache.tomcat:annotations-api:6.0.53")
 }
 
