@@ -1,10 +1,10 @@
 package com.github.drazumova.plugintest.dataset
 
-import com.intellij.openapi.util.InvalidDataException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import java.io.File
+import java.nio.file.InvalidPathException
 
 fun main(args: Array<String>) {
     val reportsIssuesDir = args[0]
@@ -21,10 +21,11 @@ fun main(args: Array<String>) {
     if (!outputFile.exists()) outputFile.createNewFile()
 
     val allFiles = directory.listFiles()?.filter { it.isFile && it.extension == "json" }
-        ?: throw InvalidDataException("Empty or broken files directory")
+        ?: throw InvalidPathException(reportsDir, "Empty or broken files directory")
 
     val reports = allFiles.filterNot { excludedList.contains(it.name) }.take(100).mapNotNull { file ->
         val reportId = file.nameWithoutExtension
+        println(reportId)
         val json = Json.parseToJsonElement(file.readText()).jsonObject
 
         val report = json.toReport(reportId, analyzer)
