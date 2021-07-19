@@ -15,7 +15,6 @@ import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.treewalk.filter.PathFilter
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.lang.Integer.max
 
 class Analyzer(path: String, private val issueToReportFile: String) {
     private val gitDir = File(path, ".git")
@@ -54,7 +53,7 @@ class Analyzer(path: String, private val issueToReportFile: String) {
         val textBefore = textByCommit(prevCommit, path)
         if (textBefore.isEmpty()) return false
 
-        val methodRange = getMethodTextRange(textBefore, methodName)
+        val methodRange = methodTextRange(textBefore, methodName)
         if (methodRange.first < 0) return false
 
 
@@ -73,41 +72,10 @@ class Analyzer(path: String, private val issueToReportFile: String) {
         return false
     }
 
-    fun isFileModified(commit: RevCommit, path: String): Int {
-        val blame = annotationByCommit(commit, path) ?: return -1
-
-        var line = 0
-        var mx = -1
-        try {
-            while (true) {
-                mx = max(blame.getSourceCommit(line).commitTime, mx)
-                line++
-            }
-        } catch (e: ArrayIndexOutOfBoundsException) {
-            // ...(
-        }
-        return mx
-    }
-
     fun checkCommits(reportId: String): RevCommit? {
         val message = commitMessage(reportId)
         val commits = commitByMessage(message)
         return commits.firstOrNull()
-    }
-
-    fun getModificationTime(commit: RevCommit, rangeBegin: Int, rangeEnd: Int, path: String): Int {
-        if (rangeBegin < 0 || rangeEnd < 0 || path.isEmpty()) return -1
-
-        val blame = annotationByCommit(commit, path)
-
-        return (rangeBegin..rangeEnd).mapNotNull { line ->
-            try {
-                blame?.getSourceCommit(line - 1)?.commitTime
-            } catch (_: ArrayIndexOutOfBoundsException) {
-                -1
-            }
-        }.maxOrNull() ?: -1
-
     }
 
     fun textByCommit(commit: RevCommit, filepath: String): String {
@@ -129,7 +97,8 @@ class Analyzer(path: String, private val issueToReportFile: String) {
         return ""
     }
 
-    private fun annotationByCommit(commit: RevCommit, filepath: String): BlameResult? {
+    fun annotationByCommit(commit: RevCommit, filepath: String): BlameResult? {
+        if (filepath.isEmpty()) return null
         return Git(repo).blame().setFilePath(filepath)
             .setStartCommit(commit).setTextComparator(RawTextComparator.WS_IGNORE_ALL).call()
     }

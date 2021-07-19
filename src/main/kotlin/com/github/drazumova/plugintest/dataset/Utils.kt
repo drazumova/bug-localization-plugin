@@ -4,13 +4,14 @@ import com.github.javaparser.ParseException
 import com.github.javaparser.StaticJavaParser
 import com.github.javaparser.ast.body.MethodDeclaration
 
-fun getMethodTextRange(fileText: String, method: String): Pair<Int, Int> {
+fun methodTextRange(fileText: String, method: String): Pair<Int, Int> {
     if (method.isEmpty()) return Pair(-1, -1)
     val methodName = method.takeLastWhile { it != '.' }
     try {
         val compilationUnit = StaticJavaParser.parse(fileText)
         val methodDeclaration = compilationUnit.findAll(MethodDeclaration::class.java).firstOrNull {
-            it.nameAsString == methodName }
+            it.nameAsString == methodName
+        }
             ?: return Pair(-1, -1)
         return Pair(methodDeclaration.range.get().begin.line, methodDeclaration.range.get().end.line)
     } catch (x: ParseException) {

@@ -1,97 +1,77 @@
 package com.github.drazumova.plugintest.dataset
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
-import org.eclipse.jgit.revwalk.RevCommit
+import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import java.io.File
+import java.nio.file.InvalidPathException
 
 
-@Serializable
-data class FullStacktrace(
-    val reportId: String,
-    val exceptionClass: String,
-    val initCommit: Boolean,
-    val lines: List<LineInformation>
+data class Features(
+    val reportId: String, val label: Int, val fileModificationTime: Int, val methodModificationTime: Int,
+    val lineModificationTime: Int
 )
 
-@Serializable
-data class LineInformation(
-    val lineNumber: Int, val filename: String,
-    val lastModified: Int, val lastModifiedFile: Int, val lastModifiedMethod: Int,
-    val labelMethod: Boolean
-)
-
-private fun JsonObject.getOrNull(field: String): JsonElement? {
-    val value = get(field)
-    if (value is JsonNull || value == null) return null
-    return value
-}
-
-internal fun lineInformation(
-    analyzer: Analyzer, frame: JsonObject,
-    commit: RevCommit, prevCommit: RevCommit,
-    initCommit: RevCommit
-): LineInformation {
-    val filename = frame.getOrNull("file_name")?.jsonPrimitive?.content ?: ""
-    val line = frame.getOrNull("line_number")?.jsonPrimitive?.int ?: -1
-    val path = frame.getOrNull("path")?.jsonPrimitive?.content ?: ""
-    val method = frame.getOrNull("method_name")?.jsonPrimitive?.content ?: ""
-
-    if (path.isEmpty() || line < 0 || method.isEmpty())
-        return LineInformation(line, filename, -1, -1, -1, false)
-
-    val isModified = analyzer.isMethodFixed(commit, prevCommit, path, method)
-
-    val fileText = analyzer.textByCommit(initCommit, path)
-    val methodRange = getMethodTextRange(fileText, method)
-    val methodModificationTime = analyzer.getModificationTime(initCommit, methodRange.first, methodRange.second, path)
-    val lineModificationTime = analyzer.getModificationTime(initCommit, line, line, path)
-
-    val fileModificationTime = analyzer.isFileModified(commit, path)
-
-//    println("For $filename $methodRange and line $line")
-//    println("And times $methodModificationTime $lineModificationTime $fileModificationTime")
-    return LineInformation(
-        line, filename,
-        lastModified = lineModificationTime,
-        lastModifiedFile = fileModificationTime,
-        lastModifiedMethod = methodModificationTime,
-        labelMethod = isModified
-    )
-}
-
-internal fun getFixCommit(hash: String, reportId: String, analyzer: Analyzer): RevCommit? {
-    return analyzer.commitByHash(hash) ?: analyzer.checkCommits(reportId)
-}
-
-internal fun JsonObject.toReport(reportId: String, analyzer: Analyzer): FullStacktrace? {
-    val exceptionClass = (getOrNull("class") ?: return null).jsonArray.toList().map { it.jsonPrimitive.content }
-
-
-    val hash = getOrNull("hash")?.jsonPrimitive?.content ?: ""
-    getOrDefault("hash", null)
-    val fixCommit = getFixCommit(hash, reportId, analyzer) ?: return null
-    println("Commit message: ${fixCommit.shortMessage}")
-
-    val prevCommit = analyzer.commitByHash(fixCommit.parents.first().name) ?: return null
-
-    val hash1 = getOrNull("commit")?.jsonObject?.getOrNull("hash")?.jsonPrimitive?.content ?: ""
-    val initCommit = analyzer.commitByHash(hash1) ?: prevCommit
-    if (initCommit == prevCommit) println("No init commit,  last used")
-
-    if ((getOrNull("frames") ?: return null).jsonArray.size > 100) {
-        println("Too long stacktrace")
-        return null
-    }
-
-    val frames = (getOrNull("frames") ?: return null).jsonArray.map {
-        lineInformation(analyzer, it.jsonObject, fixCommit, prevCommit, initCommit)
-    }
-    return FullStacktrace(
+internal fun Features.toList(): List<String> {
+    return listOf(
         reportId,
-        exceptionClass.firstOrNull() ?: "",
-        initCommit != prevCommit,
-        frames
+        label.toString(),
+        fileModificationTime.toString(),
+        methodModificationTime.toString(),
+        lineModificationTime.toString()
     )
-
 }
 
+fun lineFromReportDirectory(directory: File): List<Features>? {
+    val files = directory.listFiles() ?: return null
+    val reportFile = files.singleOrNull { file -> file.extension == "json" } ?: return null
+    val filesDirectory = files.singleOrNull { file -> file.isDirectory } ?: return null
+
+    val report = Json.decodeFromString<Report>(reportFile.readText())
+    return report.lines.filter { it.filename.isNotEmpty() && it.line > 0 }.map { line ->
+        val annotationFile = File(filesDirectory, "${line.filename}.json")
+        val fileText = File(filesDirectory, line.filename).readText()
+        val methodRange = methodTextRange(fileText, line.methodName)
+
+
+        val file = Json.decodeFromString<AnnotatedFile?>(annotationFile.readText())
+
+        val fileModificationTime = file?.lineAnnotation
+            ?.map { it.time }?.maxOrNull() ?: -1
+        val methodModificationTime =
+            if (methodRange.first != -1)
+                file?.lineAnnotation
+                    ?.slice(IntRange(methodRange.first, methodRange.second))?.map { it.time }?.maxOrNull() ?: -1
+            else
+                -1
+
+        val lineTimeModification =
+            if (file != null && line.line < file.lineAnnotation.size) file.lineAnnotation[line.line].time else -1
+
+        Features(report.reportId, line.label, fileModificationTime, methodModificationTime, lineTimeModification)
+    }
+}
+
+fun main(args: Array<String>) {
+    val inputPath = args[0]
+    val outputFile = args[1]
+
+    if (!File(outputFile).exists()) File(outputFile).createNewFile()
+
+    val directory = File(inputPath)
+
+    if (!directory.exists() || !directory.isDirectory)
+        throw InvalidPathException(inputPath, "Empty or broken files directory")
+
+    val features = directory.listFiles()?.flatMap {
+        lineFromReportDirectory(it) ?: emptyList()
+    }?.map { it.toList() } ?: emptyList()
+
+    val columns = Features::class.java.declaredFields.map { it.name }
+
+    csvWriter().open("test.csv") {
+        writeRow(columns)
+        writeRows(features)
+    }
+
+}
