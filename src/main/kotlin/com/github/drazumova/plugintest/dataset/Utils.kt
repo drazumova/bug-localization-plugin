@@ -6,7 +6,10 @@ import com.github.javaparser.ast.body.MethodDeclaration
 
 fun methodTextRange(fileText: String, method: String): Pair<Int, Int> {
     if (method.isEmpty()) return Pair(-1, -1)
-    val methodName = method.takeLastWhile { it != '.' }
+    val methodName = method
+        .dropLastWhile { !it.isLetter() }
+        .removeSuffix("$\$lambda$$")
+        .takeLastWhile { it != '.' && it != '$'}
     try {
         val compilationUnit = StaticJavaParser.parse(fileText)
         val methodDeclaration = compilationUnit.findAll(MethodDeclaration::class.java).firstOrNull {

@@ -18,17 +18,28 @@ fun main(args: Array<String>) {
 
     val outputPath = File(output)
     if (!outputPath.exists()) outputPath.mkdirs()
+    val collected = outputPath.listFiles()?.toList() ?: emptyList<File>()
 
     val allFiles = directory.listFiles()?.filter { it.isFile && it.extension == "json" }
         ?: throw InvalidPathException(reportsDir, "Empty or broken files directory")
 
-    allFiles.filterNot { excludedList.contains(it.name) }.take(10).forEach { file ->
+    val all = allFiles.filterNot { excludedList.contains(it.name) }.size
+    var cnt = 0
+
+    allFiles.filterNot { excludedList.contains(it.name) }.forEach { file ->
         val reportId = file.nameWithoutExtension
         println(reportId)
+        if (collected.any {it.name == reportId}) {
+            cnt += 1
+            println("Already got $reportId")
+            return@forEach
+        }
         val json = Json.parseToJsonElement(file.readText()).jsonObject
 
-        val dataset = Dataset.createDataset(analyzer, json, outputPath.path)
-        if (dataset == null) println("Failed to parse $reportId")
-        dataset?.saveReport()
+        val parsedInfo = ReportEnvironment.parseReport(analyzer, json, outputPath.path)
+        cnt += 1
+        println("$cnt / $all")
+        if (parsedInfo == null) println("Failed to parse $reportId")
+        parsedInfo?.save()
     }
 }

@@ -46,7 +46,7 @@ private fun JsonObject.getOrNull(field: String): JsonElement? {
     return value
 }
 
-class Dataset private constructor(
+class ReportEnvironment private constructor(
     private val analyzer: Analyzer, id: String, private val report: JsonObject,
     private val initCommit: RevCommit, private val fixCommit: RevCommit,
     savePath: String
@@ -70,7 +70,7 @@ class Dataset private constructor(
             return analyzer.commitByHash(parent.name)
         }
 
-        fun createDataset(analyzer: Analyzer, report: JsonObject, path: String): Dataset? {
+        fun parseReport(analyzer: Analyzer, report: JsonObject, path: String): ReportEnvironment? {
             val initHash = report.getOrNull("commit")?.jsonObject?.getOrNull("hash")?.jsonPrimitive?.content ?: ""
             val fixHash = report.getOrNull("hash")?.jsonPrimitive?.content ?: ""
             val id = report["id"]?.jsonPrimitive?.content ?: return null
@@ -79,13 +79,18 @@ class Dataset private constructor(
             val prevCommit = previousCommit(analyzer, fixCommit)
             val initCommit = analyzer.commitByHash(initHash) ?: prevCommit ?: return null
 
-            return Dataset(analyzer, id, report, initCommit, fixCommit, path)
+            return ReportEnvironment(analyzer, id, report, initCommit, fixCommit, path)
         }
     }
 
-    fun saveReport() {
+    fun save() {
         val id = report["id"]!!.jsonPrimitive.content
         val exceptionClass = report["class"]?.jsonArray?.toList()?.map { it.jsonPrimitive.content } ?: emptyList()
+
+        if (report["frames"]?.jsonArray?.size ?: 0 > 200) {
+            println("Too long stacktrace")
+            return
+        }
 
         val lines = report["frames"]?.jsonArray?.map {
             val frame = it.jsonObject
@@ -95,14 +100,13 @@ class Dataset private constructor(
             val method = frame.getOrNull("method_name")?.jsonPrimitive?.content ?: ""
             val label = frame.getOrNull("label")?.jsonPrimitive?.int ?: 0
 
-            if (filename.isEmpty() || path.isEmpty())
-                return@map ExceptionLine("", "", -1, "", 0)
+            if (filename.isNotEmpty() && path.isNotEmpty() && line >= 0) {
+                val fileText = analyzer.textByCommit(initCommit, path)
+                saveToFile(File(filesDirectory, filename), fileText)
 
-            val fileText = analyzer.textByCommit(initCommit, path)
-            saveToFile(File(filesDirectory, filename), fileText)
-
-            val annotatedFile = annotatedFile(filename, path)
-            saveToFile(File(filesDirectory, "$filename.json"), Json.encodeToString(annotatedFile))
+                val annotatedFile = annotatedFile(filename, path)
+                saveToFile(File(filesDirectory, "$filename.json"), Json.encodeToString(annotatedFile))
+            }
 
             ExceptionLine(filename, method, line, path, label)
         } ?: emptyList()
