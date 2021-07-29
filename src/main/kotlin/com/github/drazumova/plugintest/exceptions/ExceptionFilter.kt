@@ -55,12 +55,14 @@ class Filter(private val scope: GlobalSearchScope) : Filter {
 //        service.clear(collectedInfo)
         val probabilitiesList = service.checkResultForStacktrace(collectedInfo) ?: return null
         val index = probabilitiesList.indexOf(probabilitiesList.maxOrNull())
-
+        println("max index $index")
         val targetLine = collectedInfo.exceptionLines[index]
 
         val highlightAttributes = TextAttributes()
-        highlightAttributes.backgroundColor = Color.RED
-        highlightAttributes.foregroundColor = Color.BLUE
+        highlightAttributes.apply {
+            backgroundColor = Color.RED
+            foregroundColor = Color.BLUE
+        }
         return Filter.Result(
             targetLine.startOffset,
             targetLine.startOffset + targetLine.lineText.length,

@@ -5,31 +5,59 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.nio.file.InvalidPathException
-import java.util.*
 
 
 data class Features(
-    val reportId: String,
     val lineNumber: Int,
-    val inFileNumber: Int,
-    val label: Int,
-    val fileModificationTime: Int,
-    val methodModificationTime: Int,
-    val lineModificationTime: Int,
-    val commiter: Boolean,
-    val lineModificationTimeFrame: Int,
+    val isFirstLine: Int,
+    val isLastModified: Int,
+    val editable: Int
 )
 
-internal fun Features.toList(): List<String> {
+internal fun Features.toList(reportId: String): List<String> {
     return listOf(
         reportId,
         lineNumber.toString(),
-        inFileNumber.toString(),
-        label.toString(),
-        fileModificationTime.toString(),
-        methodModificationTime.toString(),
-        lineModificationTime.toString()
+        isFirstLine.toString(),
+        isLastModified.toString(),
+        editable.toString()
     )
+}
+
+data class FullStacktraceLineInformation(
+    val lineNumber: Int,
+    val filename: String,
+    val method: String,
+    val annotation: AnnotatedFile?,
+    val fileText: String
+)
+
+fun Boolean.toInt() = if (this) 1 else 0
+
+fun features(lines: List<FullStacktraceLineInformation>): List<Features> {
+    val methodModificationTimes = lines.map {
+        val methodRange = methodTextRange(it.fileText, it.method)
+//        println("${it.fileText} $methodRange")
+        val methodModificationTime =
+            if (methodRange.first != -1)
+                it.annotation?.lineAnnotation
+                    ?.slice(IntRange(methodRange.first, methodRange.second))
+                    ?.map { line -> line.time }
+                    ?.maxOrNull() ?: -1
+            else
+                -1
+        methodModificationTime
+    }
+    val firstEditableLine = lines.firstOrNull { it.annotation != null }
+
+    return lines.mapIndexed { index: Int, line: FullStacktraceLineInformation ->
+        Features(
+            index,
+            (line == firstEditableLine).toInt(),
+            (methodModificationTimes[index] == methodModificationTimes.maxOrNull()).toInt(),
+            (line.annotation != null).toInt()
+        )
+    }
 }
 
 fun lineFromReportDirectory(directory: File): List<Features>? {
@@ -38,45 +66,23 @@ fun lineFromReportDirectory(directory: File): List<Features>? {
     val filesDirectory = files.singleOrNull { file -> file.isDirectory } ?: return null
 
     val report = Json.decodeFromString<Report>(reportFile.readText())
-    return report.lines.filter { it.line > 0 }
-        .mapIndexed { index: Int, line: ExceptionLine ->
-            if (!File(filesDirectory, line.filename).exists()) {
-                return@mapIndexed Features(
-                    report.reportId, index, line.line, line.label,
-                    -1, -1, -1, true, -1
-                )
-            }
-            val fileText = File(filesDirectory, line.filename).readText()
-            val methodRange = methodTextRange(fileText, line.methodName)
-            val annotationFile = File(filesDirectory, "${line.filename}.json")
-            val file = Json.decodeFromString<AnnotatedFile?>(annotationFile.readText())
-                ?: return@mapIndexed Features(
-                    report.reportId, index, line.line, line.label,
-                    -1, -1, -1, true, -1
-                )
-            val fileModificationTime = file.lineAnnotation
-                .map { it.time }.maxOrNull() ?: -1
-            val methodModificationTime =
-                if (methodRange.first != -1)
-                    file.lineAnnotation
-                        .slice(IntRange(methodRange.first, methodRange.second)).map { it.time }.maxOrNull() ?: -1
-                else
-                    -1
-
-            val lineTimeModification = file.lineAnnotation.getOrNull(line.line)?.time ?: -1
-
-            Features(
-                report.reportId,
-                index,
-                line.line,
-                line.label,
-                fileModificationTime,
-                methodModificationTime,
-                lineTimeModification,
-                file.lineAnnotation.getOrNull(line.line)?.author != file.lineAnnotation.getOrNull(line.line)?.commiter,
-                Date(lineTimeModification.toLong()).hours
+    val lines = report.lines.map {
+        val reportDirectory = File(filesDirectory, it.filename)
+        val reportLineFile = File(File(reportDirectory, "files"), it.filename)
+        if (!reportDirectory.exists() || !reportLineFile.exists())
+            return@map FullStacktraceLineInformation(
+                it.line, it.filename, it.methodName, null, ""
             )
-        }
+
+        val fileText = reportLineFile.readText()
+
+        val savedAnnotation = File(filesDirectory, "${it.filename}.json")
+        val annotatedFile = Json.decodeFromString<AnnotatedFile?>(savedAnnotation.readText())
+
+        FullStacktraceLineInformation(it.line, it.filename, it.methodName, annotatedFile, fileText)
+    }
+
+    return features(lines)
 }
 
 fun main(args: Array<String>) {
@@ -90,15 +96,17 @@ fun main(args: Array<String>) {
     if (!directory.exists() || !directory.isDirectory)
         throw InvalidPathException(inputPath, "Empty or broken files directory")
 
-    val features = directory.listFiles()?.flatMap {
-        lineFromReportDirectory(it) ?: emptyList()
-    }?.map { it.toList() } ?: emptyList()
+    val features = directory.listFiles()?.flatMap { file ->
+        val reportLines = lineFromReportDirectory(file) ?: emptyList()
+        println(file.name)
+        reportLines.map { it.toList(file.name) }
+    } ?: emptyList()
+
 
     val columns = Features::class.java.declaredFields.map { it.name }
 
-    csvWriter().open("test.csv") {
-        writeRow(columns)
+    csvWriter().open("test_2.csv") {
+        writeRow(listOf("reportId").plus(columns))
         writeRows(features)
     }
-
 }

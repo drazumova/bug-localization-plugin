@@ -10,11 +10,11 @@ import java.io.File
 data class Report(
     val reportId: String,
     val fixCommit: Commit, val initCommit: Commit,
-    val exceptionClass: String, val lines: List<ExceptionLine>
+    val exceptionClass: String, val lines: List<ParsedExceptionLine>
 )
 
 @Serializable
-data class ExceptionLine(
+data class ParsedExceptionLine(
     val filename: String, val methodName: String,
     val line: Int, val path: String,
     val label: Int
@@ -24,7 +24,7 @@ data class ExceptionLine(
 data class AnnotatedFile(val filename: String, val path: String, val lineAnnotation: List<Commit>)
 
 @Serializable
-data class Commit(
+data class Commit   (
     val hash: String, val message: String,
     val author: Person, val commiter: Person, val time: Int
 )
@@ -108,7 +108,7 @@ class ReportEnvironment private constructor(
                 saveToFile(File(filesDirectory, "$filename.json"), Json.encodeToString(annotatedFile))
             }
 
-            ExceptionLine(filename, method, line, path, label)
+            ParsedExceptionLine(filename, method, line, path, label)
         } ?: emptyList()
 
         val report = Report(id, fixCommit.toCommit(), initCommit.toCommit(), Json.encodeToString(exceptionClass), lines)

@@ -1,6 +1,6 @@
 package com.github.drazumova.plugintest.exceptions
 
-import com.github.drazumova.plugintest.connection.PredictionModelConnection
+import com.github.drazumova.plugintest.models.LinearModel
 import com.intellij.notification.Notification
 import com.intellij.notification.NotificationDisplayType
 import com.intellij.notification.NotificationGroup
@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 class ProbabilitiesCacheService(private val project: Project) {
     private val cache: MutableMap<String, List<Double>> = mutableMapOf()
     private val infoCache: MutableMap<String, Info> = mutableMapOf()
-    private val modelConnection = PredictionModelConnection()
+    private val modelConnection = LinearModel()
 
     private suspend fun computeResult(info: Info) {
         val probabilities = modelConnection.getProbabilities(info)
@@ -26,13 +26,17 @@ class ProbabilitiesCacheService(private val project: Project) {
 
     private fun notifyAction() {
         val notificationType =
-             NotificationGroup("demo.notifications.stickyBalloon",
-                 NotificationDisplayType.BALLOON,
-                 true)
-        val notification = Notification(notificationType.displayId,
+            NotificationGroup(
+                "demo.notifications.stickyBalloon",
+                NotificationDisplayType.BALLOON,
+                true
+            )
+        val notification = Notification(
+            notificationType.displayId,
             "Loading predictions completed",
             "Now it's possible to highlight console output",
-            NotificationType.INFORMATION)
+            NotificationType.INFORMATION
+        )
         notification.notify(project)
     }
 

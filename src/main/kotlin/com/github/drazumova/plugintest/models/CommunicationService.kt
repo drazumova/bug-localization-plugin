@@ -1,4 +1,4 @@
-package com.github.drazumova.plugintest.connection
+package com.github.drazumova.plugintest.models
 
 import com.github.drazumova.plugintest.exceptions.ExceptionLine
 import com.github.drazumova.plugintest.exceptions.Info
@@ -10,13 +10,13 @@ import messages.ModelGrpcKt
 import java.io.Closeable
 import java.util.concurrent.TimeUnit
 
-class PredictionModelConnection {
+class PredictionModelConnection : PredictionModel {
     companion object {
         const val host: String = "0.0.0.0"
         const val port: Int = 8080
     }
 
-    suspend fun getProbabilities(info: Info): List<Double> {
+    override suspend fun getProbabilities(info: Info): List<Double> {
         val channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build()
         val client = ModelClient(channel)
 
@@ -39,7 +39,7 @@ private fun ExceptionLine.toExceptionLineInfo(): Messages.Line {
     val vcsAnnotationProvider = VCSAnnotationProvider.INSTANCE
     val time = vcsAnnotationProvider.lastModifiedTime(file, lineNumber, psiFile.project)
     return Messages.Line.newBuilder().setClassName(className)
-        .setMethodName(methodName).setLastModificationTime(time).setText(lineText).build()
+        .setMethodName(methodName).setLastModificationTime(time.toLong()).setText(lineText).build()
 }
 
 class ModelClient(private val channel: ManagedChannel) : Closeable {
