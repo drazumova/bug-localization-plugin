@@ -15,10 +15,60 @@ class ExceptionFilter : ExceptionFilterFactory {
     }
 }
 
+class Highlighter(private val k: Int = 1) {
+    companion object {
+        val redHighlight = TextAttributes().also {
+            it.backgroundColor = Color.RED
+            it.foregroundColor = Color.DARK_GRAY
+        }
+
+        val orangeHighlight = TextAttributes().also {
+            it.backgroundColor = Color.ORANGE
+            it.foregroundColor = Color.DARK_GRAY
+        }
+
+        val yellowHighlight = TextAttributes().also {
+            it.backgroundColor = Color.YELLOW
+            it.foregroundColor = Color.DARK_GRAY
+        }
+
+        val greyHighlight = TextAttributes().also {
+            it.backgroundColor = Color.GRAY
+        }
+    }
+
+    private fun highlightLine(targetLine: ExceptionLine, ta: TextAttributes): Filter.Result {
+        return Filter.Result(
+            targetLine.startOffset,
+            targetLine.startOffset + targetLine.lineText.length,
+            null,
+            ta
+        )
+    }
+
+    fun highlight(probabilities: List<Double>, exceptionLines: List<ExceptionLine>): Filter.Result? {
+        val top = probabilities.toSet().sorted().takeLast(k).reversed().filter { it != 0.0 }
+        val highlights = exceptionLines.mapIndexed { index: Int, exceptionLine: ExceptionLine ->
+            if (probabilities[index] in top) {
+                val textAttributes = when(top.indexOf(probabilities[index])) {
+                    0 -> redHighlight
+                    1 -> orangeHighlight
+                    2 -> yellowHighlight
+                    else -> greyHighlight
+                }
+                highlightLine(exceptionLine, textAttributes)
+            }
+            else null
+        }.filterNotNull()
+        return Filter.Result(highlights)
+    }
+}
+
 class Filter(private val scope: GlobalSearchScope) : Filter {
     private val exceptionInfoCache = ExceptionInfoCache(scope)
     private val exceptionWorker = ExceptionWorker(exceptionInfoCache)
     private var infoBuilder = ExceptionInfoBuilder()
+    private val highlighter = Highlighter(3)
 
     @Suppress("UnstableApiUsage")
     override fun applyFilter(line: String, entireLength: Int): Filter.Result? {
@@ -52,23 +102,9 @@ class Filter(private val scope: GlobalSearchScope) : Filter {
         val collectedInfo = infoBuilder.build() ?: return null
 
         val service = exceptionInfoCache.project.getService(ProbabilitiesCacheService::class.java)
-//        service.clear(collectedInfo)
         val probabilitiesList = service.checkResultForStacktrace(collectedInfo) ?: return null
-        val index = probabilitiesList.indexOf(probabilitiesList.maxOrNull())
-        println("max index $index")
-        val targetLine = collectedInfo.exceptionLines[index]
 
-        val highlightAttributes = TextAttributes()
-        highlightAttributes.apply {
-            backgroundColor = Color.RED
-            foregroundColor = Color.BLUE
-        }
-        return Filter.Result(
-            targetLine.startOffset,
-            targetLine.startOffset + targetLine.lineText.length,
-            null,
-            highlightAttributes
-        )
+        return highlighter.highlight(probabilitiesList, collectedInfo.exceptionLines)
     }
 }
 

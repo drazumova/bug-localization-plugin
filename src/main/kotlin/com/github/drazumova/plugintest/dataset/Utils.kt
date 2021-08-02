@@ -7,7 +7,7 @@ import com.github.javaparser.ast.body.MethodDeclaration
 fun methodTextRange(fileText: String, method: String): Pair<Int, Int> {
     if (method.isEmpty()) return Pair(-1, -1)
     val methodName = method
-        .dropLastWhile { !it.isLetter() }
+        .dropLastWhile { !(it.isLetter() || it.isDigit() || (it == '_')) }
         .removeSuffix("$\$lambda$$")
         .takeLastWhile { it != '.' && it != '$'}
     try {

@@ -20,14 +20,13 @@ class VCSAnnotationProviderImpl : VCSAnnotationProvider {
         val vcsRoot = VcsUtil.getVcsRootFor(project, file)!!
 
         val annotatedLines = (0..fileAnnotation.lineCount).mapNotNull {
-            val lineRevision = fileAnnotation.getLineRevisionNumber(it) ?: return null
+            val lineRevision = fileAnnotation.getLineRevisionNumber(it) ?: return@mapNotNull null
             val commitHash = lineRevision.asString()
             val metadata =
-                GitHistoryUtils.collectCommitsMetadata(project, vcsRoot, commitHash)?.firstOrNull() ?: return null
-
+                GitHistoryUtils.collectCommitsMetadata(project, vcsRoot, commitHash)?.firstOrNull() ?: return@mapNotNull null
             Commit(
                 commitHash, metadata.fullMessage, metadata.author.toPerson(),
-                metadata.committer.toPerson(), metadata.timestamp.toInt()
+                metadata.committer.toPerson(), metadata.timestamp
             )
         }
         return AnnotatedFile(filename = file.name, path = file.canonicalPath ?: "", annotatedLines)
@@ -48,9 +47,9 @@ class VCSAnnotationProviderImpl : VCSAnnotationProvider {
         }
     }
 
-    override fun lastModifiedTime(file: VirtualFile, line: Int, project: Project): Int {
+    override fun lastModifiedTime(file: VirtualFile, line: Int, project: Project): Long {
         val annotation = annotate(file, project)
-        if (lineChangedLocally(file, line, project)) return Date().time.toInt()
+        if (lineChangedLocally(file, line, project)) return Date().time
         return annotation?.lineAnnotation?.get(line)?.time ?: -1
     }
 }

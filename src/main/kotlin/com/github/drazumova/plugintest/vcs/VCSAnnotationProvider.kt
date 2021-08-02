@@ -19,12 +19,12 @@ interface VCSAnnotationProvider {
      * java.util.Date time in milliseconds since last modification.
      * Or -1 if there are no known changes.
      */
-    fun lastModifiedTime(file: VirtualFile, line: Int, project: Project): Int
+    fun lastModifiedTime(file: VirtualFile, line: Int, project: Project): Long
     fun annotate(file: VirtualFile, project: Project): AnnotatedFile?
 }
 
 class CompositeAnnotationProvider(private val providers: List<VCSAnnotationProvider>) : VCSAnnotationProvider {
-    override fun lastModifiedTime(file: VirtualFile, line: Int, project: Project): Int {
+    override fun lastModifiedTime(file: VirtualFile, line: Int, project: Project): Long {
         return providers.map { it.lastModifiedTime(file, line, project) }.maxOrNull() ?: -1
     }
 

@@ -26,7 +26,7 @@ data class AnnotatedFile(val filename: String, val path: String, val lineAnnotat
 @Serializable
 data class Commit   (
     val hash: String, val message: String,
-    val author: Person, val commiter: Person, val time: Int
+    val author: Person, val commiter: Person, val time: Long
 )
 
 @Serializable
@@ -36,7 +36,7 @@ data class Person(val name: String, val email: String)
 private fun RevCommit.toCommit(): Commit {
     return Commit(
         name, shortMessage, Person(authorIdent.name, authorIdent.emailAddress),
-        Person(committerIdent.name, committerIdent.emailAddress), commitTime
+        Person(committerIdent.name, committerIdent.emailAddress), commitTime.toLong()
     )
 }
 

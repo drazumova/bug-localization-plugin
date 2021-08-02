@@ -49,13 +49,14 @@ fun features(lines: List<FullStacktraceLineInformation>): List<Features> {
                 -1
         methodModificationTime
     }
+    val latestModification = methodModificationTimes.maxOrNull() ?: -1
     val firstEditableLine = lines.firstOrNull { it.annotation != null }
 
     return lines.mapIndexed { index: Int, line: FullStacktraceLineInformation ->
         Features(
             index,
             (line == firstEditableLine).toInt(),
-            (methodModificationTimes[index] == methodModificationTimes.maxOrNull()).toInt(),
+            (methodModificationTimes[index] == latestModification).toInt(),
             (line.annotation != null).toInt()
         )
     }
