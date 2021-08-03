@@ -24,7 +24,7 @@
     <actions>
         <action id="com.github.drazumova.plugintest.exceptions.UpdateHighlightingAction"
                 class="com.github.drazumova.plugintest.exceptions.UpdateHighlightingAction"
-                    text="Add Exception Highlighting">
+                    text="Update Exception Highlighting">
             <add-to-group group-id="ConsoleView.PopupMenu" anchor="first"/>
         </action>
     </actions>
