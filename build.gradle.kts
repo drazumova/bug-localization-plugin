@@ -22,6 +22,7 @@ version = properties("pluginVersion")
 
 repositories {
     mavenCentral()
+    maven("https://jitpack.io")
 }
 dependencies {
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.17.1")
@@ -41,7 +42,8 @@ dependencies {
     implementation("org.eclipse.jgit:org.eclipse.jgit:5.4.2.201908231537-r")
     implementation("com.github.javaparser:javaparser-symbol-solver-core:3.22.1")
     implementation("com.github.javaparser:javaparser-core:3.22.1")
-//    compileOnly("org.apache.tomcat:annotations-api:6.0.53")
+   implementation("com.github.drieks.antlr-kotlin:antlr-kotlin-gradle-plugin:master-SNAPSHOT")
+    implementation("com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin:master-SNAPSHOT")
 }
 
 protobuf {
@@ -92,6 +94,20 @@ intellij {
     // Plugin Dependencies. Uses `platformPlugins` property from the gradle.properties file.
     plugins.set(properties("platformPlugins").split(',').map(String::trim).filter(String::isNotEmpty))
 }
+
+//kotlin {
+//    jvm()
+//
+//    sourceSets {
+//        val commonMain by getting {
+//            dependencies {
+//                // please look at https://jitpack.io/#drieks/antlr-kotlin to find the latest version
+//                api("com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin:0123456789")
+//            }
+//        }
+//    }
+//}
+
 
 changelog {
     version = properties("pluginVersion")
