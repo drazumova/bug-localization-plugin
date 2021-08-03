@@ -40,7 +40,16 @@ formatting:
     maxLineLength: 120
   Indentation:
     continuationIndentSize: 8
+  NoMultipleSpaces:
+    active: false
+  SpacingAroundKeyword:
+    active: false
 
+exceptions:
+  SwallowedException:
+    active: false
+  TooGenericExceptionCaught:
+    active: false
 
 style:
   ReturnCount:

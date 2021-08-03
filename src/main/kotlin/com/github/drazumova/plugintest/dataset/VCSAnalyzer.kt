@@ -16,7 +16,7 @@ import org.eclipse.jgit.treewalk.filter.PathFilter
 import java.io.ByteArrayOutputStream
 import java.io.File
 
-class Analyzer(path: String, private val issueToReportFile: String) {
+class VCSAnalyzer(path: String, private val issueToReportFile: String) {
     private val gitDir = File(path, ".git")
     private val repo = FileRepository(gitDir)
 

@@ -47,7 +47,7 @@ private fun JsonObject.getOrNull(field: String): JsonElement? {
 }
 
 class ReportEnvironment private constructor(
-    private val analyzer: Analyzer, id: String, private val report: JsonObject,
+    private val analyzer: VCSAnalyzer, id: String, private val report: JsonObject,
     private val initCommit: RevCommit, private val fixCommit: RevCommit,
     savePath: String
 ) {
@@ -61,16 +61,16 @@ class ReportEnvironment private constructor(
     }
 
     companion object {
-        private fun fixCommit(analyzer: Analyzer, hash: String, reportId: String): RevCommit? {
+        private fun fixCommit(analyzer: VCSAnalyzer, hash: String, reportId: String): RevCommit? {
             return analyzer.commitByHash(hash) ?: analyzer.checkCommits(reportId)
         }
 
-        private fun previousCommit(analyzer: Analyzer, commit: RevCommit): RevCommit? {
+        private fun previousCommit(analyzer: VCSAnalyzer, commit: RevCommit): RevCommit? {
             val parent = commit.parents.firstOrNull() ?: return null
             return analyzer.commitByHash(parent.name)
         }
 
-        fun parseReport(analyzer: Analyzer, report: JsonObject, path: String): ReportEnvironment? {
+        fun parseReport(analyzer: VCSAnalyzer, report: JsonObject, path: String): ReportEnvironment? {
             val initHash = report.getOrNull("commit")?.jsonObject?.getOrNull("hash")?.jsonPrimitive?.content ?: ""
             val fixHash = report.getOrNull("hash")?.jsonPrimitive?.content ?: ""
             val id = report["id"]?.jsonPrimitive?.content ?: return null

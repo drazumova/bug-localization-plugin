@@ -1,6 +1,5 @@
 package com.github.drazumova.plugintest.dataset
 
-import com.github.javaparser.ParseException
 import com.github.javaparser.StaticJavaParser
 import com.github.javaparser.ast.body.MethodDeclaration
 import kotlinx.ast.common.AstSource

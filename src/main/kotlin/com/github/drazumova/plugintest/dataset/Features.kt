@@ -3,7 +3,6 @@ package com.github.drazumova.plugintest.dataset
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import org.jetbrains.kotlin.idea.configuration.fetchGradleVersion
 import java.io.File
 import java.nio.file.InvalidPathException
 import java.util.*

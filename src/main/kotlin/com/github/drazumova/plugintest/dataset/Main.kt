@@ -12,7 +12,7 @@ fun main(args: Array<String>) {
     val output = args[3]
 
 
-    val analyzer = Analyzer(intellijRepo, reportsIssuesDir)
+    val analyzer = VCSAnalyzer(intellijRepo, reportsIssuesDir)
     val directory = File(reportsDir)
     val excludedList = listOf("1169266", "1744445")
 

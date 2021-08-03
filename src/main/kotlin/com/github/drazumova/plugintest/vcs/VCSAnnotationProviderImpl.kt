@@ -24,7 +24,7 @@ class VCSAnnotationProviderImpl : VCSAnnotationProvider {
             if (change.beforeRevision == null) {
                 changedLines.addAll((0 until lines).toList())
             } else {
-                //todo cache for diffs
+                // todo cache for diffs
                 val after = change.afterRevision?.content ?: ""
                 val before = change.beforeRevision?.content ?: ""
                 val diff = Diff.buildChanges(before, after)
