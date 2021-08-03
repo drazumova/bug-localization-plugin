@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.kotlin.idea.configuration.fetchGradleVersion
 import java.io.File
 import java.nio.file.InvalidPathException
+import java.util.*
 
 
 data class Features(
@@ -42,8 +43,8 @@ fun features(lines: List<FullStacktraceLineInformation>): List<Features> {
         val methodModificationTime =
             if (methodRange.first != -1)
                 it.annotation?.lineAnnotation
-                    ?.slice(IntRange(methodRange.first, methodRange.second))
-                    ?.map { line -> line.time }
+                    ?.slice(IntRange(methodRange.first - 1, methodRange.second - 1))
+                    ?.map { line -> line?.time ?: Date().time}
                     ?.maxOrNull() ?: -1
             else
                 -1

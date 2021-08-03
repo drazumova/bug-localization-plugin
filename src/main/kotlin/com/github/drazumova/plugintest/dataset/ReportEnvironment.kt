@@ -21,7 +21,7 @@ data class ParsedExceptionLine(
 )
 
 @Serializable
-data class AnnotatedFile(val filename: String, val path: String, val lineAnnotation: List<Commit>)
+data class AnnotatedFile(val filename: String, val path: String, val lineAnnotation: List<Commit?>)
 
 @Serializable
 data class Commit   (

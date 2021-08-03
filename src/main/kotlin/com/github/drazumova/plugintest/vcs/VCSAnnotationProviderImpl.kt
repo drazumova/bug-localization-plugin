@@ -11,19 +11,40 @@ import com.intellij.util.diff.Diff
 import com.intellij.vcs.log.VcsUser
 import com.intellij.vcsUtil.VcsUtil
 import git4idea.history.GitHistoryUtils
+import java.lang.Integer.max
 import java.util.*
 
 class VCSAnnotationProviderImpl : VCSAnnotationProvider {
     override fun annotate(file: VirtualFile, project: Project): AnnotatedFile? {
         val annotationProvider = VcsUtil.getVcsFor(project, file)?.annotationProvider ?: return null
+        val change = ChangeListManager.getInstance(project).getChange(file)
+        val changedLines = mutableSetOf<Int>()
+        val lines = change?.afterRevision?.content?.split("\n")?.size ?: 0
+        if (change?.afterRevision != null) {
+            if (change.beforeRevision == null) {
+                changedLines.addAll((0 until lines).toList())
+            } else {
+                //todo cache for diffs
+                val after = change.afterRevision?.content ?: ""
+                val before = change.beforeRevision?.content ?: ""
+                val diff = Diff.buildChanges(before, after)
+                val changes = DiffIterableUtil.create(diff, before.length, after.length).changes()
+                changes.forEach {
+                    changedLines.addAll((it.start2..it.end2))
+                }
+            }
+        }
         val fileAnnotation = annotationProvider.annotate(file)
         val vcsRoot = VcsUtil.getVcsRootFor(project, file)!!
 
-        val annotatedLines = (0..fileAnnotation.lineCount).mapNotNull {
-            val lineRevision = fileAnnotation.getLineRevisionNumber(it) ?: return@mapNotNull null
+        val lineCount = max(lines, fileAnnotation.lineCount)
+
+        val annotatedLines = (0 until lineCount).map {
+            if (it in changedLines) return@map null
+            val lineRevision = fileAnnotation.getLineRevisionNumber(it) ?: return@map null
             val commitHash = lineRevision.asString()
             val metadata =
-                GitHistoryUtils.collectCommitsMetadata(project, vcsRoot, commitHash)?.firstOrNull() ?: return@mapNotNull null
+                GitHistoryUtils.collectCommitsMetadata(project, vcsRoot, commitHash)?.firstOrNull() ?: return@map null
             Commit(
                 commitHash, metadata.fullMessage, metadata.author.toPerson(),
                 metadata.committer.toPerson(), metadata.timestamp
@@ -39,7 +60,7 @@ class VCSAnnotationProviderImpl : VCSAnnotationProvider {
     private fun lineChangedLocally(file: VirtualFile, line: Int, project: Project): Boolean {
         val change = ChangeListManager.getInstance(project).getChange(file)
         val after = change?.afterRevision?.content ?: return false
-        val before = change.beforeRevision?.content ?: return false
+        val before = change.beforeRevision?.content ?: return true
         val diff = Diff.buildChanges(before, after)
         val changes = DiffIterableUtil.create(diff, before.length, after.length).changes()
         return Sequence { changes }.any {
