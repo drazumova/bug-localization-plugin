@@ -103,6 +103,7 @@ class Filter(private val scope: GlobalSearchScope) : Filter {
 
         val service = exceptionInfoCache.project.getService(ProbabilitiesCacheService::class.java)
         val probabilitiesList = service.checkResultForStacktrace(collectedInfo) ?: return null
+        service.clear(collectedInfo)
 
         return highlighter.highlight(probabilitiesList, collectedInfo.exceptionLines)
     }
