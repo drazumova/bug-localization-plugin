@@ -1,3 +1,4 @@
+import com.google.protobuf.gradle.*
 import io.gitlab.arturbosch.detekt.Detekt
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -5,33 +6,84 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 fun properties(key: String) = project.findProperty(key).toString()
 
 plugins {
-    // Java support
     id("java")
-    // Kotlin support
     id("org.jetbrains.kotlin.jvm") version "1.5.10"
-    // gradle-intellij-plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
     id("org.jetbrains.intellij") version "1.0"
-    // gradle-changelog-plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
     id("org.jetbrains.changelog") version "1.1.2"
-    // detekt linter - read more: https://detekt.github.io/detekt/gradle.html
     id("io.gitlab.arturbosch.detekt") version "1.17.1"
-    // ktlint linter - read more: https://github.com/JLLeitschuh/ktlint-gradle
     id("org.jlleitschuh.gradle.ktlint") version "10.0.0"
+    kotlin("plugin.serialization") version "1.5.10"
+    id("com.google.protobuf") version "0.8.16"
+
 }
 
 group = properties("pluginGroup")
 version = properties("pluginVersion")
 
-// Configure project's dependencies
 repositories {
     mavenCentral()
+    maven("https://jitpack.io")
 }
 dependencies {
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.17.1")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:1.5.10")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.1")
+    implementation("com.squareup.okhttp3:okhttp:4.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.0")
+    implementation("com.google.protobuf:protobuf-gradle-plugin:0.8.16")
+    implementation("com.google.protobuf:protobuf-java:3.6.1")
+    implementation("io.grpc:grpc-kotlin-stub:1.1.0")
+    implementation("io.grpc:grpc-protobuf:0.8.13")
+    implementation("io.grpc:grpc-netty-shaded:1.39.0")
+    implementation("io.grpc:grpc-netty:1.39.0")
+    implementation("io.grpc:grpc-protobuf:1.39.0")
+    implementation("io.grpc:grpc-stub:1.39.0")
+    implementation("com.github.doyaaaaaken:kotlin-csv-jvm:0.15.2")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:5.4.2.201908231537-r")
+    implementation("com.github.javaparser:javaparser-symbol-solver-core:3.22.1")
+    implementation("com.github.javaparser:javaparser-core:3.22.1")
+   implementation("com.github.drieks.antlr-kotlin:antlr-kotlin-gradle-plugin:master-SNAPSHOT")
+    implementation("com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin:master-SNAPSHOT")
 }
 
-// Configure gradle-intellij-plugin plugin.
-// Read more: https://github.com/JetBrains/gradle-intellij-plugin
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.6.1"
+    }
+    plugins {
+        id("grpc") {
+            artifact = "io.grpc:protoc-gen-grpc-java:1.15.1"
+        }
+        id("grpckt") {
+            artifact = "io.grpc:protoc-gen-grpc-kotlin:1.1.0:jdk7@jar"
+        }
+    }
+    generateProtoTasks {
+        ofSourceSet("main").forEach {
+            it.plugins {
+                id("grpc")
+                id("grpckt")
+            }
+        }
+    }
+}
+
+sourceSets {
+    create("proto") {
+        proto {
+            srcDir("src/main/proto")
+        }
+    }
+
+    main {
+        java {
+            srcDirs("build/generated/source/proto/main/grpc")
+            srcDirs("build/generated/source/proto/main/grpckt")
+            srcDirs("build/generated/source/proto/main/java")
+        }
+    }
+}
+
 intellij {
     pluginName.set(properties("pluginName"))
     version.set(properties("platformVersion"))
@@ -43,15 +95,25 @@ intellij {
     plugins.set(properties("platformPlugins").split(',').map(String::trim).filter(String::isNotEmpty))
 }
 
-// Configure gradle-changelog-plugin plugin.
-// Read more: https://github.com/JetBrains/gradle-changelog-plugin
+//kotlin {
+//    jvm()
+//
+//    sourceSets {
+//        val commonMain by getting {
+//            dependencies {
+//                // please look at https://jitpack.io/#drieks/antlr-kotlin to find the latest version
+//                api("com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin:0123456789")
+//            }
+//        }
+//    }
+//}
+
+
 changelog {
     version = properties("pluginVersion")
     groups = emptyList()
 }
 
-// Configure detekt plugin.
-// Read more: https://detekt.github.io/detekt/kotlindsl.html
 detekt {
     config = files("./detekt-config.yml")
     buildUponDefaultConfig = true
@@ -64,7 +126,6 @@ detekt {
 }
 
 tasks {
-    // Set the compatibility versions to 1.8
     withType<JavaCompile> {
         sourceCompatibility = "1.8"
         targetCompatibility = "1.8"
@@ -82,7 +143,6 @@ tasks {
         sinceBuild.set(properties("pluginSinceBuild"))
         untilBuild.set(properties("pluginUntilBuild"))
 
-        // Extract the <!-- Plugin description --> section from README.md and provide for the plugin's manifest
         pluginDescription.set(
             File(projectDir, "README.md").readText().lines().run {
                 val start = "<!-- Plugin description -->"
@@ -95,7 +155,6 @@ tasks {
             }.joinToString("\n").run { markdownToHTML(this) }
         )
 
-        // Get the latest available change notes from the changelog file
         changeNotes.set(provider { changelog.getLatest().toHTML() })
     }
 

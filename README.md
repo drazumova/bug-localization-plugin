@@ -1,5 +1,65 @@
 # plugin-test
 
+
+## Dataset 
+
+To compute fully annotated stacktrace by `intellij_fixed` dataset `com.github.drazumova.plugintest.dataset.Main.main`
+is used. Command line args: 
+1. Directory with `issue_report_ids.csv` file
+2. Directory with reports files. Only `report_id.json` files used
+3. Path to intellij repository
+4. Output directory path
+
+Resulting format for one report: 
+
+`report_id/`\
+  `- report_id.json` information about start commit, fix commit and stacktrace \
+  `- files/`\
+  `-- filename.java` full text of file mentioned in the stacktrace line\
+  `-- filename.java.json` vcs annotation for every line
+
+
+
+To get features from annotated reports run `com.github.drazumova.plugintest.dataset.Features.main` 
+with following argument:
+1. Path to dataset
+2. Output file
+
+Generated header:\
+``reportId,lineNumber,isFirstLine,isLastModified,editable,label``\
+Rows example:\
+``1501544,0,1,0,1,1``\
+``1501544,1,0,0,1,0``\
+``1501544,2,0,0,1,0``
+
+
+## Plugin model 
+
+For stacktrace realtime highlighting `com.github.drazumova.plugintest.models.LinearModel` requires configuration 
+stored in `resources/model_params.json`. 
+
+Default value: ``{
+"weights": [1.0, 1.0, 0.0]
+}``
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ![Build](https://github.com/drazumova/plugin-test/workflows/Build/badge.svg)
 [![Version](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
