@@ -24,7 +24,7 @@ data class ParsedExceptionLine(
 data class AnnotatedFile(val filename: String, val path: String, val lineAnnotation: List<Commit?>)
 
 @Serializable
-data class Commit   (
+data class Commit(
     val hash: String, val message: String,
     val author: Person, val commiter: Person, val time: Long
 )
@@ -61,6 +61,8 @@ class ReportEnvironment private constructor(
     }
 
     companion object {
+        const val maxStacktraceLen = 200
+
         private fun fixCommit(analyzer: VCSAnalyzer, hash: String, reportId: String): RevCommit? {
             return analyzer.commitByHash(hash) ?: analyzer.checkCommits(reportId)
         }
@@ -87,7 +89,7 @@ class ReportEnvironment private constructor(
         val id = report["id"]!!.jsonPrimitive.content
         val exceptionClass = report["class"]?.jsonArray?.toList()?.map { it.jsonPrimitive.content } ?: emptyList()
 
-        if (report["frames"]?.jsonArray?.size ?: 0 > 200) {
+        if (report["frames"]?.jsonArray?.size ?: 0 > maxStacktraceLen) {
             println("Too long stacktrace")
             return
         }

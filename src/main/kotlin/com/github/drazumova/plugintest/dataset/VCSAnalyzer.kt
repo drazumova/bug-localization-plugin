@@ -20,6 +20,10 @@ class VCSAnalyzer(path: String, private val issueToReportFile: String) {
     private val gitDir = File(path, ".git")
     private val repo = FileRepository(gitDir)
 
+    companion object {
+        const val maxLogDepth = 1000
+    }
+
 
     private fun commitMessage(reportId: String): String {
         var message = "(?<!ID)EA-"
@@ -34,7 +38,8 @@ class VCSAnalyzer(path: String, private val issueToReportFile: String) {
     }
 
     private fun commitByMessage(message: String): List<RevCommit> {
-        return Git(repo).log().setMaxCount(1000).setRevFilter(MessageRevFilter.create(".*$message.*")).call().toList()
+        return Git(repo).log().setMaxCount(maxLogDepth)
+            .setRevFilter(MessageRevFilter.create(".*$message.*")).call().toList()
     }
 
     fun commitByHash(hash: String): RevCommit? {

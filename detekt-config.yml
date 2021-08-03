@@ -44,6 +44,8 @@ formatting:
     active: false
   SpacingAroundKeyword:
     active: false
+  SpacingAroundCurly:
+    active: false
 
 exceptions:
   SwallowedException:

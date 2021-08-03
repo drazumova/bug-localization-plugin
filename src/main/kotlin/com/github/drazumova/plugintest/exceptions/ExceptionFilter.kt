@@ -64,11 +64,11 @@ class Highlighter(private val k: Int = 1) {
     }
 }
 
-class Filter(private val scope: GlobalSearchScope) : Filter {
+class Filter(private val scope: GlobalSearchScope, private val highlightedLinesNumber: Int = 3) : Filter {
     private val exceptionInfoCache = ExceptionInfoCache(scope)
     private val exceptionWorker = ExceptionWorker(exceptionInfoCache)
     private var infoBuilder = ExceptionInfoBuilder()
-    private val highlighter = Highlighter(3)
+    private val highlighter = Highlighter(highlightedLinesNumber)
 
     @Suppress("UnstableApiUsage")
     override fun applyFilter(line: String, entireLength: Int): Filter.Result? {
