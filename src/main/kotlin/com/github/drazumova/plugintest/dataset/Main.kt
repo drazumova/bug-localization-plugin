@@ -5,6 +5,7 @@ import kotlinx.serialization.json.jsonObject
 import java.io.File
 import java.nio.file.InvalidPathException
 
+@Suppress("MagicNumber")
 fun main(args: Array<String>) {
     val reportsIssuesDir = args[0]
     val reportsDir = args[1]
