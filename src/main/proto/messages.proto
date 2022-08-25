@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package messages;
+
+service Model {
+  rpc getPrediction (PredictionRequest) returns (PredictionResponse) {}
+}
+
+message PredictionRequest {
+  Exception info = 1;
+}
+
+message PredictionResponse {
+  repeated double probabilities = 1;
+}
+
+message Exception {
+  string className = 1;
+  string message = 2;
+  repeated Line stacktrace = 3;
+}
+
+message Line {
+  string text = 1;
+  int64 lastModificationTime = 2;
+  string methodName = 3;
+  string className = 4;
+}
